@@ -1,0 +1,56 @@
+<script>
+	<name>Sort date overlay creator</name>
+	<description>Create a sort date from family information</description>
+	<category>Data Manipulation</category>
+	<input orientation="horizontal">
+		<search id="search" name="Saved search to run across" />
+		<field id="docID" name="Document ID">
+			<filters>
+				<category>2</category>
+			</filters>
+		</field>
+		<field id="groupID" name="Group ID">
+			<filters>
+				<category>5</category>
+			</filters>
+		</field>
+		<field id="PDate" name="Primary Date">
+			<filters>
+				<type>2</type>
+			</filters>
+		</field>
+	</input>
+	<display type="itemlist" />
+	<action timeout="3600" returns="table"><![CDATA[
+
+	IF OBJECT_ID('tempSearchTable', 'U') IS NOT NULL
+	  DROP TABLE tempSearchTable
+
+	create table tempSearchTable (
+
+        [ArtifactID] int, [ControlNumber] VARCHAR(255), [GroupID] VARCHAR(255), [pDate] DATETIME
+
+    )
+
+	
+	INSERT INTO tempSearchTable
+	select EDDSDBO.[Document].[ArtifactID], EDDSDBO.[Document].#docID#, EDDSDBO.[Document].#groupID#, EDDSDBO.[document].#PDate#
+	#search# 
+
+
+	select s_children.ControlNumber, s_parents.pDate
+	FROM (
+	SELECT ControlNumber, GroupID FROM tempSearchTable (nolock)
+	WHERE ControlNumber <> GroupID
+	) s_children
+	INNER JOIN
+	(
+		SELECT ControlNumber, pDate FROM tempSearchTable (nolock)
+	WHERE ControlNumber = GroupID
+	) s_parents
+	ON s_children.GroupID = s_parents.ControlNumber
+
+	DROP TABLE tempSearchTable
+
+	]]></action>
+</script>
